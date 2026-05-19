@@ -11,7 +11,6 @@ import {
   isToday,
   getCondition,
 } from './weather.js';
-import { computeComfortIndex } from './comfort.js';
 
 // ===== СОСТОЯНИЯ ПРИЛОЖЕНИЯ =====
 
@@ -46,8 +45,6 @@ export function renderCurrentWeather(current, cityName, country, region = '') {
   const countryPart = country ? `, ${country}`  : '';
   const locationLabel = `${cityName}${regionPart}${countryPart}`;
 
-  const comfort = computeComfortIndex(current);
-
   document.getElementById('currentWeather').innerHTML = `
     <div class="current-main">
       <span class="current-city">${locationLabel}</span>
@@ -67,22 +64,6 @@ export function renderCurrentWeather(current, cityName, country, region = '') {
       ${createMetricHtml('Ветер', current.windSpeed, 'м/с', current.windDirection)}
       ${createMetricHtml('Давление', current.pressure, 'мм')}
       ${createMetricHtml('Видимость', current.visibility, 'км')}
-    </div>
-
-    <div class="comfort-index" style="--comfort-color: ${comfort.color}">
-      <div class="comfort-index__left">
-        <span class="comfort-index__emoji">${comfort.emoji}</span>
-        <div class="comfort-index__text">
-          <span class="comfort-index__label">${comfort.label}</span>
-          <span class="comfort-index__detail">${comfort.detail}</span>
-        </div>
-      </div>
-      <div class="comfort-index__bar-wrap">
-        <div class="comfort-index__bar">
-          <div class="comfort-index__bar-fill" style="width: ${comfort.score}%"></div>
-        </div>
-        <span class="comfort-index__score">${comfort.score}</span>
-      </div>
     </div>
   `;
 }
