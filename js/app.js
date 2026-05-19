@@ -23,6 +23,8 @@ import {
   clearSearchSuggestions,
   initTabs,
 } from './ui.js';
+import { initWeatherCanvas, updateWeatherAnimation } from './canvas.js';
+import { getHistory, addToHistory, renderHistory } from './history.js';
 
 // ===== СОСТОЯНИЕ ПРИЛОЖЕНИЯ =====
 
@@ -37,14 +39,6 @@ const state = {
 
 // ===== ЗАГРУЗКА ПОГОДЫ =====
 
-/**
- * Загрузить и отрисовать погоду для заданных координат.
- * @param {number} latitude
- * @param {number} longitude
- * @param {string} cityName
- * @param {string} [country]
- * @param {string} [region]  — область / республика для уточнения
- */
 async function loadWeather(latitude, longitude, cityName, country = '', region = '') {
   state.latitude  = latitude;
   state.longitude = longitude;
@@ -58,17 +52,21 @@ async function loadWeather(latitude, longitude, cityName, country = '', region =
     const apiData = await fetchWeatherData(latitude, longitude);
     state.apiData  = apiData;
 
+    // Обновить анимированный фон
+    const current = parseCurrentWeather(apiData);
+    updateWeatherAnimation(current.weatherCode);
+
     renderAllPanels(apiData, cityName, country, region);
     showWeather();
+
+    // Сохранить в историю
+    addToHistory({ name: cityName, latitude, longitude, country, admin1: region });
   } catch (error) {
     showError(`Не удалось загрузить погоду: ${error.message}`);
     console.error('[app] loadWeather error:', error);
   }
 }
 
-/**
- * Отрисовать все панели на основе данных API.
- */
 function renderAllPanels(apiData, cityName, country, region = '') {
   const todayDateStr  = new Date().toISOString().slice(0, 10);
   const current       = parseCurrentWeather(apiData);
@@ -125,7 +123,6 @@ function handleCitySelect(city) {
   const searchInput = document.getElementById('searchInput');
   searchInput.value = city.name;
   clearSearchSuggestions();
-  // admin1 — регион из Open-Meteo Geocoding (область, республика)
   loadWeather(city.latitude, city.longitude, city.name, city.country, city.admin1 ?? '');
 }
 
@@ -135,11 +132,19 @@ function handleSearchKeydown(event) {
   }
 }
 
+// Показать историю при фокусе на пустом поле
+function handleSearchFocus(event) {
+  if (event.target.value.length < 2) {
+    const history = getHistory();
+    if (history.length) {
+      renderHistory(handleCitySelect);
+    }
+  }
+}
+
 // ===== ВКЛАДКИ =====
 
 function handleTabChange(tabName) {
-  // Вкладки уже отрисованы при загрузке, переключение — чисто UI
-  // Если понадобится lazy-load данных — добавить здесь
   console.debug('[app] tab changed to:', tabName);
 }
 
@@ -154,20 +159,13 @@ function handleDocumentClick(event) {
 
 // ===== АВТОЗАПУСК ПО ГЕОЛОКАЦИИ =====
 
-/**
- * При загрузке страницы тихо запрашиваем геолокацию.
- * Если пользователь уже давал разрешение — погода появится сразу.
- * Если браузер покажет запрос — ждём ответа.
- * Если отказ или ошибка — просто остаёмся на экране приветствия, не пугаем.
- */
 async function requestWeatherOnLoad() {
   try {
     const { latitude, longitude }   = await getCurrentPosition();
     const { name, country, region } = await reverseGeocode(latitude, longitude);
     await loadWeather(latitude, longitude, name, country, region);
-    await loadWeather(latitude, longitude, name, country);
   } catch {
-    // Молча игнорируем — пользователь сам введёт город или нажмёт кнопку геолокации
+    // Молча игнорируем — пользователь сам введёт город
   }
 }
 
@@ -177,11 +175,13 @@ function init() {
   initTheme();
   bindThemeToggle();
   initTabs(handleTabChange);
+  initWeatherCanvas();
 
   // Поиск
   const searchInput = document.getElementById('searchInput');
   searchInput.addEventListener('input',   handleSearchInput);
   searchInput.addEventListener('keydown', handleSearchKeydown);
+  searchInput.addEventListener('focus',   handleSearchFocus);
 
   // Геолокация по кнопке
   document.getElementById('geoBtn').addEventListener('click', handleGeoRequest);
@@ -193,5 +193,4 @@ function init() {
   requestWeatherOnLoad();
 }
 
-// Запуск
 init();

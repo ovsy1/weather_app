@@ -11,6 +11,7 @@ import {
   isToday,
   getCondition,
 } from './weather.js';
+import { computeComfortIndex } from './comfort.js';
 
 // ===== СОСТОЯНИЯ ПРИЛОЖЕНИЯ =====
 
@@ -40,18 +41,12 @@ export function showWeather() {
 
 // ===== ТЕКУЩАЯ ПОГОДА =====
 
-/**
- * Отрисовать блок текущей погоды.
- * @param {object} current   — parseCurrentWeather()
- * @param {string} cityName
- * @param {string} country
- * @param {string} [region]  — область / республика
- */
 export function renderCurrentWeather(current, cityName, country, region = '') {
-  // Формат: "Октябрьский · Республика Башкортостан, Россия"
   const regionPart  = region  ? ` · ${region}` : '';
   const countryPart = country ? `, ${country}`  : '';
   const locationLabel = `${cityName}${regionPart}${countryPart}`;
+
+  const comfort = computeComfortIndex(current);
 
   document.getElementById('currentWeather').innerHTML = `
     <div class="current-main">
@@ -73,17 +68,25 @@ export function renderCurrentWeather(current, cityName, country, region = '') {
       ${createMetricHtml('Давление', current.pressure, 'мм')}
       ${createMetricHtml('Видимость', current.visibility, 'км')}
     </div>
+
+    <div class="comfort-index" style="--comfort-color: ${comfort.color}">
+      <div class="comfort-index__left">
+        <span class="comfort-index__emoji">${comfort.emoji}</span>
+        <div class="comfort-index__text">
+          <span class="comfort-index__label">${comfort.label}</span>
+          <span class="comfort-index__detail">${comfort.detail}</span>
+        </div>
+      </div>
+      <div class="comfort-index__bar-wrap">
+        <div class="comfort-index__bar">
+          <div class="comfort-index__bar-fill" style="width: ${comfort.score}%"></div>
+        </div>
+        <span class="comfort-index__score">${comfort.score}</span>
+      </div>
+    </div>
   `;
 }
 
-/**
- * Создать HTML одного метрика.
- * @param {string} label
- * @param {number|string} value
- * @param {string} unit
- * @param {string} [sub]  — дополнительная подпись
- * @returns {string}
- */
 function createMetricHtml(label, value, unit, sub = '') {
   return `
     <div class="current-metric">
@@ -98,17 +101,11 @@ function createMetricHtml(label, value, unit, sub = '') {
 
 // ===== ВКЛАДКА: СЕГОДНЯ =====
 
-/**
- * Отрисовать детальную панель текущего дня.
- * @param {object} current   — parseCurrentWeather()
- * @param {Array}  hourly    — parseHourlyForDate()
- * @param {object} todayDaily — один элемент parseDailyForecast()
- */
 export function renderTodayPanel(current, hourly, todayDaily) {
   const panel = document.getElementById('panelToday');
 
   panel.innerHTML = `
-    ${renderHourlyScroll(hourly)}
+    ${renderTempChart(hourly)}
 
     <p class="section-title">Подробности</p>
     <div class="today-grid">
@@ -127,9 +124,6 @@ export function renderTodayPanel(current, hourly, todayDaily) {
   `;
 }
 
-/**
- * Создать HTML карточки с деталью.
- */
 function renderDetailCard(icon, label, value, unit, extraHtml = '') {
   return `
     <div class="detail-card">
@@ -144,9 +138,6 @@ function renderDetailCard(icon, label, value, unit, extraHtml = '') {
   `;
 }
 
-/**
- * Карточка восхода/заката — занимает всю ширину.
- */
 function renderSunCard(todayDaily) {
   if (!todayDaily) return '';
   const sunrise = formatTime(todayDaily.sunrise);
@@ -170,9 +161,6 @@ function renderSunCard(todayDaily) {
   `;
 }
 
-/**
- * SVG-дуга солнца.
- */
 function createSunArcSvg() {
   return `
     <div class="sun-widget__arc">
@@ -185,9 +173,6 @@ function createSunArcSvg() {
   `;
 }
 
-/**
- * Прогресс-бар в виде HTML-строки.
- */
 function createProgressBar(value) {
   return `
     <div class="progress-bar">
@@ -196,62 +181,116 @@ function createProgressBar(value) {
   `;
 }
 
-/**
- * Подпись к УФ-индексу.
- */
 function renderUvLabel(uvIndex) {
   if (uvIndex == null) return '';
   const levels = [
-    { max: 2,  label: 'Низкий',     color: '#22c55e' },
-    { max: 5,  label: 'Умеренный',  color: '#eab308' },
-    { max: 7,  label: 'Высокий',    color: '#f97316' },
-    { max: 10, label: 'Очень высокий', color: '#ef4444' },
+    { max: 2,  label: 'Низкий',          color: '#22c55e' },
+    { max: 5,  label: 'Умеренный',        color: '#eab308' },
+    { max: 7,  label: 'Высокий',          color: '#f97316' },
+    { max: 10, label: 'Очень высокий',    color: '#ef4444' },
     { max: Infinity, label: 'Экстремальный', color: '#9333ea' },
   ];
   const level = levels.find(l => uvIndex <= l.max);
   return `<span class="detail-card__sub" style="color:${level.color}">${level.label}</span>`;
 }
 
-// ===== ПОЧАСОВОЙ СКРОЛЛ =====
+// ===== SVG ГРАФИК ТЕМПЕРАТУРЫ =====
 
-/**
- * Отрисовать горизонтальный скролл с часами.
- */
-function renderHourlyScroll(hourlyData) {
-  const now = new Date();
-  const currentHour = now.getHours();
+function renderTempChart(hourlyData) {
+  if (!hourlyData.length) return '';
 
-  const cards = hourlyData.map(hour => {
-    const hourNumber = new Date(hour.time).getHours();
-    const isCurrent  = hourNumber === currentHour;
-    const condition  = getCondition(hour.weatherCode);
+  const now = new Date().getHours();
+  const W = 800, H = 160, PAD_X = 40, PAD_Y = 20;
+  const drawW = W - PAD_X * 2;
+  const drawH = H - PAD_Y * 2;
 
-    return `
-      <div class="hourly-card ${isCurrent ? 'hourly-card--current' : ''}">
-        <span class="hourly-card__time">${hourNumber.toString().padStart(2, '0')}:00</span>
-        <span class="hourly-card__icon">${condition.icon}</span>
-        <span class="hourly-card__temp">${formatTemp(hour.temperature)}°</span>
-        ${hour.precipitationProb > 0
-          ? `<span class="hourly-card__precip">💧${hour.precipitationProb}%</span>`
-          : ''}
-      </div>
-    `;
-  }).join('');
+  const temps = hourlyData.map(h => h.temperature);
+  const precips = hourlyData.map(h => h.precipitationProb);
+  const minT = Math.min(...temps) - 2;
+  const maxT = Math.max(...temps) + 2;
+  const range = maxT - minT || 1;
+  const n = temps.length;
+
+  const toX = i => PAD_X + (i / (n - 1)) * drawW;
+  const toY = t => PAD_Y + drawH - ((t - minT) / range) * drawH;
+
+  // Построить плавный путь (cubic bezier)
+  let d = `M ${toX(0)} ${toY(temps[0])}`;
+  for (let i = 1; i < n; i++) {
+    const x0 = toX(i - 1), y0 = toY(temps[i - 1]);
+    const x1 = toX(i),     y1 = toY(temps[i]);
+    const cpx = (x0 + x1) / 2;
+    d += ` C ${cpx} ${y0}, ${cpx} ${y1}, ${x1} ${y1}`;
+  }
+
+  // Закрытый контур для градиента
+  const dFill = d +
+    ` L ${toX(n - 1)} ${H} L ${toX(0)} ${H} Z`;
+
+  // Точки только для каждые 3 часа
+  const dots = hourlyData
+    .map((h, i) => {
+      const hNum = new Date(h.time).getHours();
+      if (hNum % 3 !== 0) return '';
+      const cx = toX(i);
+      const cy = toY(h.temperature);
+      const isCur = hNum === now;
+      const labelY = cy > PAD_Y + 20 ? cy - 10 : cy + 20;
+      return `
+        <circle cx="${cx}" cy="${cy}" r="${isCur ? 6 : 4}"
+          fill="${isCur ? 'var(--accent-primary)' : 'var(--bg-surface)'}"
+          stroke="${isCur ? 'var(--accent-primary)' : 'var(--text-muted)'}"
+          stroke-width="2"/>
+        <text x="${cx}" y="${labelY}" text-anchor="middle"
+          font-size="11" fill="var(--text-primary)" font-family="var(--font-display)" font-weight="600">
+          ${formatTemp(h.temperature)}°
+        </text>
+        <text x="${cx}" y="${H - 4}" text-anchor="middle"
+          font-size="10" fill="var(--text-muted)" font-family="var(--font-body)">
+          ${hNum.toString().padStart(2, '0')}
+        </text>
+        ${h.precipitationProb > 15 ? `
+          <text x="${cx}" y="${PAD_Y - 6}" text-anchor="middle"
+            font-size="9" fill="#60a5fa" font-family="var(--font-body)">
+            ${h.precipitationProb}%
+          </text>` : ''}
+      `;
+    }).join('');
+
+  // Текущий час — вертикальная линия
+  const nowIdx = hourlyData.findIndex(h => new Date(h.time).getHours() === now);
+  const nowLine = nowIdx >= 0 ? `
+    <line x1="${toX(nowIdx)}" y1="${PAD_Y}" x2="${toX(nowIdx)}" y2="${H - 16}"
+      stroke="var(--accent-primary)" stroke-width="1" stroke-dasharray="3 3" opacity="0.5"/>
+  ` : '';
 
   return `
     <p class="section-title" style="margin-bottom:12px">По часам</p>
-    <div class="hourly-scroll-wrapper">
-      <div class="hourly-row">${cards}</div>
+    <div class="temp-chart-wrapper">
+      <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" class="temp-chart-svg">
+        <defs>
+          <linearGradient id="tempGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--accent-primary)" stop-opacity="0.25"/>
+            <stop offset="100%" stop-color="var(--accent-primary)" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+
+        <!-- Заливка под кривой -->
+        <path d="${dFill}" fill="url(#tempGrad)"/>
+
+        <!-- Линия графика -->
+        <path d="${d}" fill="none" stroke="var(--accent-primary)" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round"/>
+
+        ${nowLine}
+        ${dots}
+      </svg>
     </div>
   `;
 }
 
 // ===== ПРОГНОЗ НА НЕДЕЛЮ =====
 
-/**
- * Отрисовать прогноз на 7 дней.
- * @param {Array} dailyForecast — parseDailyForecast()
- */
 export function renderWeekPanel(dailyForecast) {
   const panel = document.getElementById('panelWeek');
   const cards  = dailyForecast.slice(0, 7).map(day => createForecastCard(day)).join('');
@@ -260,21 +299,12 @@ export function renderWeekPanel(dailyForecast) {
 
 // ===== ПРОГНОЗ НА МЕСЯЦ =====
 
-/**
- * Отрисовать прогноз на 30 дней.
- * @param {Array} dailyForecast
- */
 export function renderMonthPanel(dailyForecast) {
   const panel = document.getElementById('panelMonth');
   const cards  = dailyForecast.map(day => createForecastCard(day)).join('');
   panel.innerHTML = `<div class="forecast-list">${cards}</div>`;
 }
 
-/**
- * Создать HTML одной карточки дня (общий шаблон для недели и месяца).
- * @param {object} day
- * @returns {string}
- */
 function createForecastCard(day) {
   const todayMark = isToday(day.date) ? 'forecast-card--today' : '';
   const weekday   = isToday(day.date) ? 'Сегодня' : formatWeekday(day.date);
@@ -298,10 +328,6 @@ function createForecastCard(day) {
 
 // ===== ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК =====
 
-/**
- * Инициализировать переключатель вкладок.
- * @param {Function} onTabChange  — callback(tabName)
- */
 export function initTabs(onTabChange) {
   const tabButtons = document.querySelectorAll('.tab');
 
@@ -309,11 +335,9 @@ export function initTabs(onTabChange) {
     btn.addEventListener('click', () => {
       const targetTab = btn.dataset.tab;
 
-      // Переключить активную кнопку
       tabButtons.forEach(b => b.classList.remove('tab--active'));
       btn.classList.add('tab--active');
 
-      // Переключить панели
       ['today', 'week', 'month'].forEach(tabName => {
         const panel = document.getElementById(`panel${capitalize(tabName)}`);
         panel.classList.toggle('hidden', tabName !== targetTab);
@@ -324,22 +348,12 @@ export function initTabs(onTabChange) {
   });
 }
 
-/**
- * Вспомогательная функция: первая буква заглавная.
- * @param {string} str
- * @returns {string}
- */
 function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 // ===== ПОИСК =====
 
-/**
- * Отрисовать список подсказок поиска.
- * @param {Array} cities — результат searchCities()
- * @param {Function} onSelect  — callback(city)
- */
 export function renderSearchSuggestions(cities, onSelect) {
   const listEl = document.getElementById('searchSuggestions');
 
@@ -349,7 +363,6 @@ export function renderSearchSuggestions(cities, onSelect) {
   }
 
   listEl.innerHTML = cities.map(city => {
-    // admin1 — регион (область, республика), admin2 — район
     const region = city.admin1 ? `<span class="suggestion-item__region">${city.admin1}</span>` : '';
     return `
       <li class="suggestion-item" data-id="${city.id}">
@@ -364,9 +377,6 @@ export function renderSearchSuggestions(cities, onSelect) {
   });
 }
 
-/**
- * Очистить список подсказок.
- */
 export function clearSearchSuggestions() {
   document.getElementById('searchSuggestions').innerHTML = '';
 }

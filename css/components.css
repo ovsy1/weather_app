@@ -504,3 +504,140 @@
     display: none;
   }
 }
+
+/* ===== КОМФОРТНЫЙ ИНДЕКС ===== */
+
+.comfort-index {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--comfort-color, #22c55e) 8%, var(--bg-glass));
+  border: 1px solid color-mix(in srgb, var(--comfort-color, #22c55e) 30%, transparent);
+  margin-top: 4px;
+}
+
+.comfort-index__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.comfort-index__emoji {
+  font-size: 28px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.15));
+}
+
+.comfort-index__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.comfort-index__label {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--comfort-color, #22c55e);
+}
+
+.comfort-index__detail {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.comfort-index__bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.comfort-index__bar {
+  width: 100px;
+  height: 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--comfort-color, #22c55e) 20%, var(--bg-glass));
+  overflow: hidden;
+}
+
+.comfort-index__bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--comfort-color, #22c55e);
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.comfort-index__score {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--comfort-color, #22c55e);
+  min-width: 24px;
+  text-align: right;
+}
+
+@media (max-width: 500px) {
+  .comfort-index {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .comfort-index__bar-wrap {
+    width: 100%;
+  }
+  .comfort-index__bar {
+    flex: 1;
+  }
+}
+
+/* ===== SVG ГРАФИК ТЕМПЕРАТУРЫ ===== */
+
+.temp-chart-wrapper {
+  background: var(--bg-surface);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-md);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 20px 8px 8px;
+  margin-bottom: 28px;
+  overflow: hidden;
+}
+
+.temp-chart-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+
+/* ===== ИСТОРИЯ ПОИСКА ===== */
+
+.suggestion-history-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  list-style: none;
+}
+
+.suggestion-item--history {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.suggestion-item__history-icon {
+  font-size: 14px;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
