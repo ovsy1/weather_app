@@ -184,11 +184,11 @@ function renderTempChart(hourlyData, currentHour = new Date().getHours()) {
 
   // На мобилке каждый час — отдельная колонка шириной 52px, итого скролл
   // На десктопе фиксированный viewBox, растягивается по ширине
-  const COL_W = 52;          // ширина колонки на мобилке
-  const H = 180;
-  const PAD_X = 28;
-  const PAD_TOP = 32;        // место для подписи температуры сверху
-  const PAD_BOT = 28;        // место для подписи часа снизу
+  const COL_W = 36;          // ширина колонки на мобилке (было 52)
+  const H = 140;
+  const PAD_X = 20;
+  const PAD_TOP = 28;        // место для подписи температуры сверху
+  const PAD_BOT = 22;        // место для подписи часа снизу
   const drawH = H - PAD_TOP - PAD_BOT;
 
   const n = hourlyData.length;
@@ -196,9 +196,14 @@ function renderTempChart(hourlyData, currentHour = new Date().getHours()) {
   const W_DESK   = 800;
 
   const temps  = hourlyData.map(h => h.temperature);
-  const minT   = Math.min(...temps) - 2;
-  const maxT   = Math.max(...temps) + 2;
-  const range  = maxT - minT || 1;
+  const rawMin = Math.min(...temps);
+  const rawMax = Math.max(...temps);
+  const spread = rawMax - rawMin;
+  // Минимальный диапазон 6° — иначе при ровной погоде линия болтается у потолка
+  const padding = Math.max(3, (6 - spread) / 2);
+  const minT   = rawMin - padding;
+  const maxT   = rawMax + padding;
+  const range  = maxT - minT;
 
   // Функции координат — принимают totalWidth чтобы строить и мобильную и десктопную версию
   const buildSvg = (W) => {
@@ -216,7 +221,7 @@ function renderTempChart(hourlyData, currentHour = new Date().getHours()) {
     const dFill = d + ` L ${toX(n - 1)} ${H - PAD_BOT + 4} L ${toX(0)} ${H - PAD_BOT + 4} Z`;
 
     // Точки — каждые 2 часа для мобилки, каждые 3 для десктопа
-    const step = W < 500 ? 2 : 3;
+    const step = 3; // каждые 3 часа — читаемо при ширине колонки 36px
     const dots = hourlyData.map((h, i) => {
       const hNum = parseInt(h.time.slice(11, 13), 10);
       if (hNum % step !== 0) return '';
