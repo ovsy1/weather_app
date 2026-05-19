@@ -98,7 +98,6 @@ export function renderTodayPanel(current, hourly, todayDaily, currentHour = new 
       ${renderDetailCard('💨', 'Скорость ветра', current.windSpeed, 'м/с',
           renderWindArrow(current.windDegrees, current.windDirection)
         )}
-      ${renderDetailCard('🌡️', 'Ощущается как', formatTemp(current.feelsLike), '°')}
       ${renderDetailCard('☁️', 'Облачность', current.cloudCover, '%', createProgressBar(current.cloudCover))}
       ${renderDetailCard('🕶️', 'УФ-индекс', current.uvIndex ?? '—', '', renderUvLabel(current.uvIndex))}
       ${renderDetailCard('👁️', 'Видимость', current.visibility, 'км')}
@@ -205,9 +204,9 @@ function renderTempChart(hourlyData, currentHour = new Date().getHours()) {
 
   // На мобилке каждый час — отдельная колонка шириной 52px, итого скролл
   // На десктопе фиксированный viewBox, растягивается по ширине
-  const COL_W = 36;          // ширина колонки на мобилке (было 52)
+  const COL_W = 28;          // ширина колонки на мобилке
   const H = 140;
-  const PAD_X = 20;
+  const PAD_X = 16;
   const PAD_TOP = 28;        // место для подписи температуры сверху
   const PAD_BOT = 22;        // место для подписи часа снизу
   const drawH = H - PAD_TOP - PAD_BOT;
@@ -242,7 +241,7 @@ function renderTempChart(hourlyData, currentHour = new Date().getHours()) {
     const dFill = d + ` L ${toX(n - 1)} ${H - PAD_BOT + 4} L ${toX(0)} ${H - PAD_BOT + 4} Z`;
 
     // Точки — каждые 2 часа для мобилки, каждые 3 для десктопа
-    const step = 3; // каждые 3 часа — читаемо при ширине колонки 36px
+    const step = 2; // каждые 2 часа на мобилке при ширине колонки 28px
     const dots = hourlyData.map((h, i) => {
       const hNum = parseInt(h.time.slice(11, 13), 10);
       if (hNum % step !== 0) return '';
@@ -258,7 +257,7 @@ function renderTempChart(hourlyData, currentHour = new Date().getHours()) {
           stroke-width="2"/>
         <text x="${cx}" y="${labelY}" text-anchor="middle"
           font-size="12" fill="${isCur ? 'var(--accent-primary)' : 'var(--text-primary)'}"
-          font-family="var(--font-display)" font-weight="700">
+          font-family="var(--font-body)" font-weight="600">
           ${formatTemp(h.temperature)}°
         </text>
         <text x="${cx}" y="${H - 6}" text-anchor="middle"
