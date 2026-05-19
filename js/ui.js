@@ -48,6 +48,7 @@ export function renderCurrentWeather(current, cityName, country, region = '') {
   document.getElementById('currentWeather').innerHTML = `
     <div class="current-main">
       <span class="current-city">${locationLabel}</span>
+      <span class="city-fact" id="cityFact"></span>
       <div class="current-temp">
         ${formatTemp(current.temperature)}<sup>°C</sup>
       </div>
@@ -65,6 +66,8 @@ export function renderCurrentWeather(current, cityName, country, region = '') {
       ${createMetricHtml('Давление', current.pressure, 'мм')}
       ${createMetricHtml('Видимость', current.visibility, 'км')}
     </div>
+
+    <div class="today-holiday" id="todayHoliday"></div>
   `;
 }
 
@@ -93,8 +96,9 @@ export function renderTodayPanel(current, hourly, todayDaily, currentHour = new 
       ${renderDetailCard('💧', 'Влажность', current.humidity, '%', createProgressBar(current.humidity))}
       ${renderDetailCard('🌡️', 'Давление', current.pressure, 'мм рт. ст.')}
       ${renderDetailCard('💨', 'Скорость ветра', current.windSpeed, 'м/с',
-          `<div class="wind-compass" title="${current.windDegrees}°">${current.windDirection}</div>`
+          renderWindArrow(current.windDegrees, current.windDirection)
         )}
+      ${renderDetailCard('🌡️', 'Ощущается как', formatTemp(current.feelsLike), '°')}
       ${renderDetailCard('☁️', 'Облачность', current.cloudCover, '%', createProgressBar(current.cloudCover))}
       ${renderDetailCard('🕶️', 'УФ-индекс', current.uvIndex ?? '—', '', renderUvLabel(current.uvIndex))}
       ${renderDetailCard('👁️', 'Видимость', current.visibility, 'км')}
@@ -158,6 +162,23 @@ function createProgressBar(value) {
   return `
     <div class="progress-bar">
       <div class="progress-bar__fill" style="width: ${Math.min(value, 100)}%"></div>
+    </div>
+  `;
+}
+
+function renderWindArrow(degrees, directionLabel) {
+  const arrowDeg = (degrees + 180) % 360;
+  return `
+    <div class="wind-arrow-wrap">
+      <svg class="wind-arrow" viewBox="0 0 24 24" width="22" height="22"
+           style="transform: rotate(${arrowDeg}deg)">
+        <path d="M12 3 L17 14 L12 11 L7 14 Z"
+              fill="var(--accent-primary)" opacity="0.9"/>
+        <line x1="12" y1="11" x2="12" y2="20"
+              stroke="var(--accent-primary)" stroke-width="2"
+              stroke-linecap="round" opacity="0.5"/>
+      </svg>
+      <span class="wind-direction-label">${directionLabel}</span>
     </div>
   `;
 }

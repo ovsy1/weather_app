@@ -25,6 +25,7 @@ import {
 } from './ui.js';
 import { initWeatherCanvas, updateWeatherAnimation } from './canvas.js';
 import { getHistory, addToHistory, renderHistory } from './history.js';
+import { getCityFact, getTodayHoliday } from './facts.js';
 
 // ===== СОСТОЯНИЕ ПРИЛОЖЕНИЯ =====
 
@@ -61,6 +62,9 @@ async function loadWeather(latitude, longitude, cityName, country = '', region =
 
     // Сохранить в историю
     addToHistory({ name: cityName, latitude, longitude, country, admin1: region });
+
+    // Асинхронно подгрузить факт о городе и праздник
+    loadCityExtras(cityName, country, region);
   } catch (error) {
     showError(`Не удалось загрузить погоду: ${error.message}`);
     console.error('[app] loadWeather error:', error);
@@ -93,7 +97,43 @@ function renderAllPanels(apiData, cityName, country, region = '') {
   requestAnimationFrame(() => scrollChartToNow());
 }
 
-// ===== ПРОКРУТКА ГРАФИКА К ТЕКУЩЕМУ ЧАСУ =====
+// ===== ФАКТ О ГОРОДЕ И ПРАЗДНИК =====
+
+async function loadCityExtras(cityName, country, region = '') {
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  // Запускаем параллельно
+  const [fact, holiday] = await Promise.all([
+    getCityFact(cityName, country, region),
+    getTodayHoliday(todayStr),
+  ]);
+
+  // Вставить факт под название города
+  if (fact) {
+    const factEl = document.getElementById('cityFact');
+    if (factEl) {
+      factEl.textContent = fact;
+      factEl.classList.add('city-fact--visible');
+    }
+  }
+
+  // Вставить праздник
+  const holidayEl = document.getElementById('todayHoliday');
+  if (holidayEl) {
+    if (holiday) {
+      holidayEl.innerHTML = `
+        <span class="holiday__emoji">🎉</span>
+        <div class="holiday__text">
+          <span class="holiday__name">Сегодня: ${holiday.name}</span>
+          <span class="holiday__fact">${holiday.fact}</span>
+        </div>
+      `;
+      holidayEl.classList.add('today-holiday--visible');
+    }
+  }
+}
+
+
 
 function scrollChartToNow() {
   const scrollEl = document.getElementById('tempChartScroll');
