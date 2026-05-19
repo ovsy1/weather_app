@@ -68,19 +68,48 @@ async function loadWeather(latitude, longitude, cityName, country = '', region =
 }
 
 function renderAllPanels(apiData, cityName, country, region = '') {
-  const todayDateStr  = new Date().toISOString().slice(0, 10);
+  // Текущее время в таймзоне города, а не устройства
+  const utcOffsetSeconds = apiData.utc_offset_seconds ?? 0;
+  const nowInCity        = new Date(Date.now() + utcOffsetSeconds * 1000 - new Date().getTimezoneOffset() * 60000);
+  // Нет — правильнее через UTC:
+  const nowCityMs        = Date.now() + utcOffsetSeconds * 1000;
+  const nowCity          = new Date(nowCityMs);
+  // Дата в городе (YYYY-MM-DD) без привязки к локальной TZ устройства
+  const pad = n => String(n).padStart(2, '0');
+  const todayDateStr = `${nowCity.getUTCFullYear()}-${pad(nowCity.getUTCMonth() + 1)}-${pad(nowCity.getUTCDate())}`;
+  const currentHourInCity = nowCity.getUTCHours();
+
   const current       = parseCurrentWeather(apiData);
   const hourly        = parseHourlyForDate(apiData, todayDateStr);
   const dailyFull     = parseDailyForecast(apiData);
   const todayDaily    = dailyFull.find(d => d.date === todayDateStr) ?? dailyFull[0];
 
   renderCurrentWeather(current, cityName, country, region);
-  renderTodayPanel(current, hourly, todayDaily);
+  renderTodayPanel(current, hourly, todayDaily, currentHourInCity);
   renderWeekPanel(dailyFull);
   renderMonthPanel(dailyFull);
+
+  // Прокрутить мобильный график к текущему часу
+  requestAnimationFrame(() => scrollChartToNow());
 }
 
-// ===== ГЕОЛОКАЦИЯ =====
+// ===== ПРОКРУТКА ГРАФИКА К ТЕКУЩЕМУ ЧАСУ =====
+
+function scrollChartToNow() {
+  const scrollEl = document.getElementById('tempChartScroll');
+  if (!scrollEl) return;
+  const nowIdx = parseInt(scrollEl.dataset.nowIdx ?? '-1', 10);
+  const colW   = parseInt(scrollEl.dataset.colW  ?? '52', 10);
+  const padX   = parseInt(scrollEl.dataset.padX  ?? '28', 10);
+  if (nowIdx < 0) return;
+
+  // Позиция текущего часа — центрируем его в контейнере
+  const xOfNow     = padX + nowIdx * colW;
+  const scrollLeft = xOfNow - scrollEl.clientWidth / 2;
+  scrollEl.scrollTo({ left: Math.max(0, scrollLeft), behavior: 'smooth' });
+}
+
+
 
 async function handleGeoRequest() {
   showLoading();

@@ -454,18 +454,33 @@
 /* ===== АДАПТИВНОСТЬ ===== */
 
 @media (max-width: 600px) {
+  /* === Текущая погода === */
   .current-weather {
     grid-template-columns: 1fr;
-    padding: 24px 20px;
-    gap: 16px;
+    padding: 20px 18px 20px;
+    gap: 12px;
+    position: relative;
+  }
+
+  .current-main {
+    gap: 6px;
   }
 
   .current-temp {
     font-size: 72px;
+    letter-spacing: -3px;
+  }
+
+  .current-temp sup {
+    font-size: 28px;
+  }
+
+  .current-desc {
+    font-size: 16px;
   }
 
   .current-icon {
-    font-size: 56px;
+    font-size: 60px;
   }
 
   .current-icon-wrapper {
@@ -473,35 +488,95 @@
     grid-column: 1;
     justify-content: flex-end;
     position: absolute;
-    right: 20px;
-    top: 24px;
+    right: 18px;
+    top: 20px;
   }
 
-  .current-weather {
-    position: relative;
+  .current-city {
+    font-size: 11px;
+    padding-right: 80px; /* не перекрываться с иконкой */
   }
 
+  /* Метрики: 2 колонки */
   .current-metrics {
     flex-wrap: wrap;
-    gap: 16px;
+    gap: 0;
+    padding-top: 16px;
   }
 
   .current-metric {
+    flex: 0 0 50%;
     border-right: none;
-    padding: 0;
-    flex: 0 0 40%;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--bg-glass-border);
   }
 
+  .current-metric:nth-child(1),
+  .current-metric:nth-child(2) {
+    border-top: none;
+  }
+
+  .current-metric:nth-child(odd) {
+    padding-right: 12px;
+    border-right: 1px solid var(--bg-glass-border);
+  }
+
+  .current-metric:nth-last-child(-n+2) {
+    border-bottom: none;
+  }
+
+  .current-metric__value {
+    font-size: 22px;
+  }
+
+  /* === Вкладки === */
+  .tabs {
+    gap: 4px;
+    padding: 4px;
+  }
+
+  .tab {
+    font-size: 13px;
+    padding: 8px 12px;
+  }
+
+  /* === Детали дня === */
   .today-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
   }
 
+  .detail-card {
+    padding: 16px;
+  }
+
+  .detail-card__value {
+    font-size: 22px;
+  }
+
+  .detail-card--wide {
+    grid-column: 1 / -1;
+  }
+
+  /* === Прогноз === */
   .forecast-card {
     grid-template-columns: 1fr auto auto;
+    gap: 8px 12px;
+    padding: 14px 16px;
   }
 
   .forecast-card__desc {
     display: none;
+  }
+
+  .forecast-card__temp-max,
+  .forecast-card__temp-min {
+    font-size: 16px;
+  }
+
+  /* === Секция-заголовок === */
+  .section-title {
+    font-size: 11px;
   }
 }
 
@@ -513,16 +588,52 @@
   border-radius: var(--radius-md);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  padding: 20px 8px 8px;
+  padding: 16px 8px 4px;
   margin-bottom: 28px;
   overflow: hidden;
 }
 
-.temp-chart-svg {
+/* Скролл-контейнер — виден только на мобилке */
+.temp-chart-scroll {
+  display: none;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.temp-chart-scroll::-webkit-scrollbar { display: none; }
+
+/* Мобильный SVG — фиксированная ширина, скроллится */
+.temp-chart-svg--mobile {
+  display: none;
+  height: auto;
+}
+
+/* Десктопный SVG — растягивается по ширине */
+.temp-chart-svg--desk {
   width: 100%;
   height: auto;
   display: block;
   overflow: visible;
+}
+
+@media (max-width: 600px) {
+  .temp-chart-wrapper {
+    padding: 16px 0 4px;
+    border-radius: var(--radius-md);
+  }
+
+  /* Показать скролл, скрыть десктопный */
+  .temp-chart-scroll {
+    display: block;
+    padding: 0 12px 8px;
+  }
+  .temp-chart-svg--mobile {
+    display: block;
+  }
+  .temp-chart-svg--desk {
+    display: none;
+  }
 }
 
 /* ===== ИСТОРИЯ ПОИСКА ===== */

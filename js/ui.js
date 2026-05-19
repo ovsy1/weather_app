@@ -82,11 +82,11 @@ function createMetricHtml(label, value, unit, sub = '') {
 
 // ===== ВКЛАДКА: СЕГОДНЯ =====
 
-export function renderTodayPanel(current, hourly, todayDaily) {
+export function renderTodayPanel(current, hourly, todayDaily, currentHour = new Date().getHours()) {
   const panel = document.getElementById('panelToday');
 
   panel.innerHTML = `
-    ${renderTempChart(hourly)}
+    ${renderTempChart(hourly, currentHour)}
 
     <p class="section-title">Подробности</p>
     <div class="today-grid">
@@ -177,95 +177,129 @@ function renderUvLabel(uvIndex) {
 
 // ===== SVG ГРАФИК ТЕМПЕРАТУРЫ =====
 
-function renderTempChart(hourlyData) {
+function renderTempChart(hourlyData, currentHour = new Date().getHours()) {
   if (!hourlyData.length) return '';
 
-  const now = new Date().getHours();
-  const W = 800, H = 160, PAD_X = 40, PAD_Y = 20;
-  const drawW = W - PAD_X * 2;
-  const drawH = H - PAD_Y * 2;
+  const now = currentHour;
 
-  const temps = hourlyData.map(h => h.temperature);
-  const precips = hourlyData.map(h => h.precipitationProb);
-  const minT = Math.min(...temps) - 2;
-  const maxT = Math.max(...temps) + 2;
-  const range = maxT - minT || 1;
-  const n = temps.length;
+  // На мобилке каждый час — отдельная колонка шириной 52px, итого скролл
+  // На десктопе фиксированный viewBox, растягивается по ширине
+  const COL_W = 52;          // ширина колонки на мобилке
+  const H = 180;
+  const PAD_X = 28;
+  const PAD_TOP = 32;        // место для подписи температуры сверху
+  const PAD_BOT = 28;        // место для подписи часа снизу
+  const drawH = H - PAD_TOP - PAD_BOT;
 
-  const toX = i => PAD_X + (i / (n - 1)) * drawW;
-  const toY = t => PAD_Y + drawH - ((t - minT) / range) * drawH;
+  const n = hourlyData.length;
+  const W_MOBILE = COL_W * n + PAD_X * 2;
+  const W_DESK   = 800;
 
-  // Построить плавный путь (cubic bezier)
-  let d = `M ${toX(0)} ${toY(temps[0])}`;
-  for (let i = 1; i < n; i++) {
-    const x0 = toX(i - 1), y0 = toY(temps[i - 1]);
-    const x1 = toX(i),     y1 = toY(temps[i]);
-    const cpx = (x0 + x1) / 2;
-    d += ` C ${cpx} ${y0}, ${cpx} ${y1}, ${x1} ${y1}`;
-  }
+  const temps  = hourlyData.map(h => h.temperature);
+  const minT   = Math.min(...temps) - 2;
+  const maxT   = Math.max(...temps) + 2;
+  const range  = maxT - minT || 1;
 
-  // Закрытый контур для градиента
-  const dFill = d +
-    ` L ${toX(n - 1)} ${H} L ${toX(0)} ${H} Z`;
+  // Функции координат — принимают totalWidth чтобы строить и мобильную и десктопную версию
+  const buildSvg = (W) => {
+    const toX = i => PAD_X + (i / (n - 1)) * (W - PAD_X * 2);
+    const toY = t => PAD_TOP + drawH - ((t - minT) / range) * drawH;
 
-  // Точки только для каждые 3 часа
-  const dots = hourlyData
-    .map((h, i) => {
-      const hNum = new Date(h.time).getHours();
-      if (hNum % 3 !== 0) return '';
+    // Плавная кривая Безье
+    let d = `M ${toX(0)} ${toY(temps[0])}`;
+    for (let i = 1; i < n; i++) {
+      const x0 = toX(i - 1), y0 = toY(temps[i - 1]);
+      const x1 = toX(i),     y1 = toY(temps[i]);
+      const cpx = (x0 + x1) / 2;
+      d += ` C ${cpx} ${y0}, ${cpx} ${y1}, ${x1} ${y1}`;
+    }
+    const dFill = d + ` L ${toX(n - 1)} ${H - PAD_BOT + 4} L ${toX(0)} ${H - PAD_BOT + 4} Z`;
+
+    // Точки — каждые 2 часа для мобилки, каждые 3 для десктопа
+    const step = W < 500 ? 2 : 3;
+    const dots = hourlyData.map((h, i) => {
+      const hNum = parseInt(h.time.slice(11, 13), 10);
+      if (hNum % step !== 0) return '';
       const cx = toX(i);
       const cy = toY(h.temperature);
       const isCur = hNum === now;
-      const labelY = cy > PAD_Y + 20 ? cy - 10 : cy + 20;
+      // Подпись температуры — всегда над точкой
+      const labelY = cy - 10;
       return `
-        <circle cx="${cx}" cy="${cy}" r="${isCur ? 6 : 4}"
+        <circle cx="${cx}" cy="${cy}" r="${isCur ? 5 : 3.5}"
           fill="${isCur ? 'var(--accent-primary)' : 'var(--bg-surface)'}"
           stroke="${isCur ? 'var(--accent-primary)' : 'var(--text-muted)'}"
           stroke-width="2"/>
         <text x="${cx}" y="${labelY}" text-anchor="middle"
-          font-size="11" fill="var(--text-primary)" font-family="var(--font-display)" font-weight="600">
+          font-size="12" fill="${isCur ? 'var(--accent-primary)' : 'var(--text-primary)'}"
+          font-family="var(--font-display)" font-weight="700">
           ${formatTemp(h.temperature)}°
         </text>
-        <text x="${cx}" y="${H - 4}" text-anchor="middle"
-          font-size="10" fill="var(--text-muted)" font-family="var(--font-body)">
+        <text x="${cx}" y="${H - 6}" text-anchor="middle"
+          font-size="11" fill="var(--text-muted)" font-family="var(--font-body)">
           ${hNum.toString().padStart(2, '0')}
         </text>
         ${h.precipitationProb > 15 ? `
-          <text x="${cx}" y="${PAD_Y - 6}" text-anchor="middle"
-            font-size="9" fill="#60a5fa" font-family="var(--font-body)">
-            ${h.precipitationProb}%
+          <text x="${cx}" y="${PAD_TOP - 8}" text-anchor="middle"
+            font-size="10" fill="#60a5fa" font-family="var(--font-body)">
+            💧${h.precipitationProb}%
           </text>` : ''}
       `;
     }).join('');
 
-  // Текущий час — вертикальная линия
-  const nowIdx = hourlyData.findIndex(h => new Date(h.time).getHours() === now);
-  const nowLine = nowIdx >= 0 ? `
-    <line x1="${toX(nowIdx)}" y1="${PAD_Y}" x2="${toX(nowIdx)}" y2="${H - 16}"
-      stroke="var(--accent-primary)" stroke-width="1" stroke-dasharray="3 3" opacity="0.5"/>
-  ` : '';
+    // Текущий час — вертикаль
+    const nowIdx = hourlyData.findIndex(h => parseInt(h.time.slice(11, 13), 10) === now);
+    const nowLine = nowIdx >= 0 ? `
+      <line x1="${toX(nowIdx)}" y1="${PAD_TOP}" x2="${toX(nowIdx)}" y2="${H - PAD_BOT}"
+        stroke="var(--accent-primary)" stroke-width="1.5" stroke-dasharray="3 3" opacity="0.45"/>
+    ` : '';
+
+    return { d, dFill, dots, nowLine };
+  };
+
+  const mob  = buildSvg(W_MOBILE);
+  const desk = buildSvg(W_DESK);
+
+  const svgInner = (W, parts) => `
+    <defs>
+      <linearGradient id="tempGrad${W}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="var(--accent-primary)" stop-opacity="0.2"/>
+        <stop offset="100%" stop-color="var(--accent-primary)" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <path d="${parts.dFill}" fill="url(#tempGrad${W})"/>
+    <path d="${parts.d}" fill="none" stroke="var(--accent-primary)" stroke-width="2.5"
+      stroke-linecap="round" stroke-linejoin="round"/>
+    ${parts.nowLine}
+    ${parts.dots}
+  `;
+
+  const nowIdx = hourlyData.findIndex(h => {
+    const hNum = parseInt(h.time.slice(11, 13), 10);
+    return hNum === now;
+  });
 
   return `
     <p class="section-title" style="margin-bottom:12px">По часам</p>
     <div class="temp-chart-wrapper">
-      <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" class="temp-chart-svg">
-        <defs>
-          <linearGradient id="tempGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="var(--accent-primary)" stop-opacity="0.25"/>
-            <stop offset="100%" stop-color="var(--accent-primary)" stop-opacity="0"/>
-          </linearGradient>
-        </defs>
 
-        <!-- Заливка под кривой -->
-        <path d="${dFill}" fill="url(#tempGrad)"/>
+      <!-- Мобильная версия: горизонтальный скролл -->
+      <div class="temp-chart-scroll" id="tempChartScroll" data-now-idx="${nowIdx}" data-col-w="${COL_W}" data-pad-x="${PAD_X}">
+        <svg width="${W_MOBILE}" height="${H}"
+             viewBox="0 0 ${W_MOBILE} ${H}"
+             xmlns="http://www.w3.org/2000/svg"
+             class="temp-chart-svg temp-chart-svg--mobile">
+          ${svgInner(W_MOBILE, mob)}
+        </svg>
+      </div>
 
-        <!-- Линия графика -->
-        <path d="${d}" fill="none" stroke="var(--accent-primary)" stroke-width="2.5"
-          stroke-linecap="round" stroke-linejoin="round"/>
-
-        ${nowLine}
-        ${dots}
+      <!-- Десктопная версия: растягивается -->
+      <svg viewBox="0 0 ${W_DESK} ${H}"
+           xmlns="http://www.w3.org/2000/svg"
+           class="temp-chart-svg temp-chart-svg--desk">
+        ${svgInner(W_DESK, desk)}
       </svg>
+
     </div>
   `;
 }

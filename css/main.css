@@ -498,10 +498,23 @@ body {
 
 @media (max-width: 600px) {
   .app-shell {
-    padding: 0 16px 40px;
+    padding: 0 12px 40px;
   }
 
   .header {
-    padding: 20px 0 18px;
+    padding: 16px 0 14px;
+  }
+
+  .header__brand {
+    font-size: 20px;
+  }
+
+  .search-section {
+    margin-bottom: 16px;
+  }
+
+  .search-input {
+    font-size: 16px; /* Prevent iOS zoom on focus */
+    padding: 14px 48px 14px 18px;
   }
 }
