@@ -1,0 +1,506 @@
+/* ===== ТЕКУЩАЯ ПОГОДА ===== */
+
+.current-weather {
+  background: var(--bg-surface);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 36px 40px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-md);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 28px 24px;
+}
+
+.current-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.current-city {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.current-temp {
+  font-family: var(--font-display);
+  font-size: 88px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text-primary);
+  letter-spacing: -4px;
+}
+
+.current-temp sup {
+  font-size: 36px;
+  font-weight: 600;
+  letter-spacing: 0;
+  vertical-align: super;
+  margin-left: 4px;
+}
+
+.current-desc {
+  font-size: 18px;
+  color: var(--text-secondary);
+  font-weight: 300;
+  font-style: italic;
+  margin-top: 4px;
+}
+
+.current-feels {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.current-icon-wrapper {
+  display: flex;
+  align-items: flex-start;
+  padding-top: 8px;
+}
+
+.current-icon {
+  font-size: 80px;
+  line-height: 1;
+  filter: drop-shadow(0 8px 24px rgba(0,0,0,0.15));
+  animation: icon-float 4s ease-in-out infinite;
+}
+
+@keyframes icon-float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-8px); }
+}
+
+/* Нижняя полоска с быстрыми метриками */
+.current-metrics {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 0;
+  border-top: 1px solid var(--bg-glass-border);
+  padding-top: 24px;
+}
+
+.current-metric {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 24px 0 0;
+  border-right: 1px solid var(--bg-glass-border);
+}
+
+.current-metric:last-child {
+  border-right: none;
+  padding-right: 0;
+  padding-left: 24px;
+}
+
+.current-metric:not(:first-child):not(:last-child) {
+  padding-left: 24px;
+}
+
+.current-metric__label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+}
+
+.current-metric__value {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}
+
+.current-metric__unit {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-left: 2px;
+}
+
+/* ===== ДЕТАЛИ ДНЯ (вкладка Сегодня) ===== */
+
+.today-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.detail-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-md);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 20px 24px;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.detail-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.detail-card__label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.detail-card__icon {
+  font-size: 14px;
+}
+
+.detail-card__value {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}
+
+.detail-card__unit {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-left: 3px;
+}
+
+.detail-card__sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* Полная ширина внутри сетки */
+.detail-card--wide {
+  grid-column: 1 / -1;
+}
+
+/* ===== ПОЧАСОВОЙ СКРОЛЛ ===== */
+
+.hourly-scroll-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 24px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-glass-border) transparent;
+}
+
+.hourly-scroll-wrapper::-webkit-scrollbar {
+  height: 4px;
+}
+
+.hourly-scroll-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.hourly-scroll-wrapper::-webkit-scrollbar-thumb {
+  background: var(--bg-glass-border);
+  border-radius: 2px;
+}
+
+.hourly-row {
+  display: flex;
+  gap: 10px;
+  padding-bottom: 8px;
+  min-width: max-content;
+}
+
+.hourly-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-md);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 72px;
+  transition: all var(--transition-fast);
+  cursor: default;
+}
+
+.hourly-card--current {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+.hourly-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+.hourly-card__time {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.hourly-card--current .hourly-card__time {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.hourly-card__icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.hourly-card__temp {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.hourly-card--current .hourly-card__temp {
+  color: #ffffff;
+}
+
+.hourly-card__precip {
+  font-size: 11px;
+  color: var(--accent-primary);
+}
+
+.hourly-card--current .hourly-card__precip {
+  color: rgba(255,255,255,0.8);
+}
+
+/* ===== КАРТОЧКА ДНЯ (неделя / месяц) ===== */
+
+.forecast-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.forecast-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-md);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 18px 24px;
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: center;
+  gap: 16px;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+
+.forecast-card:hover {
+  transform: translateX(4px);
+  box-shadow: var(--shadow-md);
+  background: var(--bg-surface-hover);
+}
+
+.forecast-card--today {
+  border-color: var(--accent-primary);
+}
+
+.forecast-card__day {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.forecast-card__date {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.forecast-card__icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.forecast-card__desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-align: right;
+  max-width: 120px;
+}
+
+.forecast-card__temps {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+}
+
+.forecast-card__temp-max {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.forecast-card__temp-min {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+/* ===== ЗАГОЛОВОК СЕКЦИИ ===== */
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 14px;
+}
+
+/* ===== PROGRESS BAR (влажность и т.д.) ===== */
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-glass-border);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.progress-bar__fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent-primary);
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== НАПРАВЛЕНИЕ ВЕТРА ===== */
+
+.wind-compass {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-glass);
+  border: 1px solid var(--bg-glass-border);
+  font-size: 16px;
+  margin-top: 8px;
+}
+
+/* ===== SUNRISE/SUNSET ВИДЖЕТ ===== */
+
+.sun-widget {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.sun-widget__time {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.sun-widget__time-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.sun-widget__time-value {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.sun-widget__arc {
+  flex: 1;
+  height: 40px;
+  position: relative;
+}
+
+.sun-widget__arc svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* ===== АДАПТИВНОСТЬ ===== */
+
+@media (max-width: 600px) {
+  .current-weather {
+    grid-template-columns: 1fr;
+    padding: 24px 20px;
+    gap: 16px;
+  }
+
+  .current-temp {
+    font-size: 72px;
+  }
+
+  .current-icon {
+    font-size: 56px;
+  }
+
+  .current-icon-wrapper {
+    grid-row: 1;
+    grid-column: 1;
+    justify-content: flex-end;
+    position: absolute;
+    right: 20px;
+    top: 24px;
+  }
+
+  .current-weather {
+    position: relative;
+  }
+
+  .current-metrics {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .current-metric {
+    border-right: none;
+    padding: 0;
+    flex: 0 0 40%;
+  }
+
+  .today-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .forecast-card {
+    grid-template-columns: 1fr auto auto;
+  }
+
+  .forecast-card__desc {
+    display: none;
+  }
+}
