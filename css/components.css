@@ -484,12 +484,9 @@
   }
 
   .current-icon-wrapper {
-    grid-row: 1;
-    grid-column: 1;
-    justify-content: flex-end;
-    position: absolute;
-    right: 18px;
-    top: 20px;
+    position: static;
+    justify-content: flex-start;
+    margin-top: 4px;
   }
 
   .current-city {
