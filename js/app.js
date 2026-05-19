@@ -24,6 +24,7 @@ import {
   initTabs,
 } from './ui.js';
 import { initWeatherCanvas, updateWeatherAnimation } from './canvas.js';
+import { initMap, updateMapCenter } from './map.js';
 import { getHistory, addToHistory, renderHistory } from './history.js';
 import { getCityFact, getTodayHoliday } from './facts.js';
 
@@ -215,6 +216,10 @@ function handleSearchFocus(event) {
 
 function handleTabChange(tabName) {
   console.debug('[app] tab changed to:', tabName);
+  if (tabName === 'map' && state.latitude !== null) {
+    // Небольшая задержка чтобы панель стала видимой до инициализации карты
+    setTimeout(() => initMap(state.latitude, state.longitude), 50);
+  }
 }
 
 // ===== ЗАКРЫТИЕ ПОДСКАЗОК ПРИ КЛИКЕ ВНЕ =====

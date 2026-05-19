@@ -378,9 +378,9 @@ export function initTabs(onTabChange) {
       tabButtons.forEach(b => b.classList.remove('tab--active'));
       btn.classList.add('tab--active');
 
-      ['today', 'week', 'month'].forEach(tabName => {
+      ['today', 'week', 'month', 'map'].forEach(tabName => {
         const panel = document.getElementById(`panel${capitalize(tabName)}`);
-        panel.classList.toggle('hidden', tabName !== targetTab);
+        if (panel) panel.classList.toggle('hidden', tabName !== targetTab);
       });
 
       onTabChange(targetTab);
